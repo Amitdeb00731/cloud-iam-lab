@@ -1,0 +1,36 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Secrets and local environment (never commit credentials)
+*.env
+.env
+*.pem
+*.key
+*.pfx
+secrets*.json
+
+# AWS CLI / tooling
+.aws/
+aws-exports.json
+
+# OS and editor
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Evidence that may carry identifiers before sanitising
+evidence/**/raw/
