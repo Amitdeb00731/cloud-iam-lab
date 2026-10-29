@@ -9,6 +9,16 @@ model, not screenshots.
 All work is in an AWS account dedicated to this lab, using test identities only.
 No real personal data and no production system is involved.
 
+> **As built:** this document describes the Identity Center design. The live
+> environment delivers the same controls with **IAM roles** in the workload
+> account, because the lab's Identity Center instance could not expose
+> multi-account permission sets. The hands-on, as-built steps and the reason are
+> in [phase1-walkthrough.md](phase1-walkthrough.md); the role definitions are in
+> [../config/iam/roles.md](../config/iam/roles.md). The control outcome (no
+> standing privilege, MFA-gated access, just-in-time admin, full audit trail) is
+> identical, and a production landing zone would front these roles with Identity
+> Center or an external IdP.
+
 ## 1.1 Create the account and the organisation
 
 1. Sign up for a new AWS account. The current free tier gives a USD 100 signup

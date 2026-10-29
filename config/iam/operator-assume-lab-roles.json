@@ -1,0 +1,15 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AssumeLabRoles",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": [
+        "arn:aws:iam::963910216975:role/ReadOnlyRole",
+        "arn:aws:iam::963910216975:role/ContributorRole",
+        "arn:aws:iam::963910216975:role/AdminJITRole"
+      ]
+    }
+  ]
+}
