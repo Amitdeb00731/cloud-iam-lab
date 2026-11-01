@@ -52,3 +52,53 @@ SCPs, because attaching any SCP switches the node to deny-by-default.
 **What it taught:** know which guardrails the platform already enforces before
 adding your own, and understand that SCPs are allow-list gates once present, not
 just a stack of denies.
+
+### 2026-11-01: Phase 2 complete, data protection on S3 with KMS
+
+The lab bucket in Curiosity Unlocked is locked down end to end with Terraform:
+block public access, no ACLs, versioning, SSE-KMS on a customer-managed key with
+rotation, a TLS-only bucket policy, classification by prefix, and a toggleable
+VPC-endpoint requirement backed by an S3 gateway endpoint. Every control was
+proven from the laptop against the live bucket; the output is in
+`evidence/phase2/`.
+
+### 2026-10-31: seed objects were encrypted with SSE-S3, not the key
+
+**What happened:** the bucket default encryption was set to SSE-KMS with the
+customer-managed key, yet the first read of a seeded object came back
+`ServerSideEncryption: AES256`. The object had been stored under SSE-S3, not the
+intended key.
+
+**What fixed it:** a Terraform `aws_s3_object` depends only on the bucket, not on
+the separate `aws_s3_bucket_server_side_encryption_configuration` resource, so
+the seed objects were uploaded a moment before the SSE-KMS default took effect
+and landed under SSE-S3. Pinning `server_side_encryption = "aws:kms"` and
+`kms_key_id` on each object, with an explicit `depends_on` the encryption
+configuration, made every object use the key and removed the race.
+
+**What it taught:** a bucket default is a fallback, not a guarantee, and resource
+ordering in infrastructure as code is a correctness property. If a control must
+hold on every object, assert it on the object rather than trusting it to be
+inherited.
+
+### 2026-10-31: a prefix policy that locked out its own reader
+
+**What happened:** the bucket policy was meant to let only `AdminJITRole` read the
+`confidential/` prefix and deny everyone else. Testing the allowed case, even
+`AdminJITRole` was denied with a 403, and Terraform itself could no longer refresh
+the confidential object.
+
+**What fixed it:** the deny condition allowed only the `sts` assumed-role session
+ARN (`arn:aws:sts::...:assumed-role/AdminJITRole/*`). For a role session,
+`aws:PrincipalArn` resolves to the role ARN
+(`arn:aws:iam::...:role/AdminJITRole`), not the session form, so the allow matched
+no one and the deny caught the intended reader too. Adding the role ARN form to
+the condition fixed it. Because the live policy had already blocked the runner's
+own refresh, the corrected policy had to be applied in isolation first with
+`-target`, before a full apply could read the object again.
+
+**What it taught:** know exactly what each condition key resolves to before you
+rely on it; `aws:PrincipalArn` is the role, not the session. A restrictive
+resource policy also applies to the identity that deploys it, so the deployment
+role has to be a principal the policy admits, which is why applies now run as the
+just-in-time admin role.

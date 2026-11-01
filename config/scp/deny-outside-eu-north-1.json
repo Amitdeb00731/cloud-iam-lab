@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "DenyOutsideUsEast1",
+      "Sid": "DenyOutsideEuNorth1",
       "Effect": "Deny",
       "NotAction": [
         "iam:*",
@@ -31,7 +31,7 @@
       "Resource": "*",
       "Condition": {
         "StringNotEquals": {
-          "aws:RequestedRegion": "us-east-1"
+          "aws:RequestedRegion": "eu-north-1"
         }
       }
     }

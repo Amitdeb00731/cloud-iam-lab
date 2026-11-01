@@ -7,14 +7,25 @@ Build 3 can scan the same code.
 
 ## 2.1 Terraform baseline
 
-1. Install Terraform and the AWS CLI; configure the CLI to assume a lab role via
-   IAM Identity Center (`aws configure sso`) and set the Region to `eu-west-2`.
-2. In `iac/terraform/`, create `providers.tf` pinning the `aws` provider (use the
-   current major version) with the Region and default tags
-   (`project = cloud-iam-lab`), and `variables.tf` for Region, bucket name prefix
-   and account ID.
-3. Keep state local for the lab (`*.tfstate` is git-ignored); note in the README
-   that production would use an S3 remote backend with state locking.
+As-built note: the lab uses the Phase 1 IAM-roles model, not Identity Center, and
+the Region is `eu-north-1` (the workload Region the account's AWS-managed region
+policy leaves open; `us-east-1` is global-services only there). Terraform runs
+under short-lived credentials from an assumed lab role, so infrastructure is built
+by a role with MFA behind it, never a standing admin.
+
+1. Install Terraform and the AWS CLI. Create an access key for the `operator`
+   user and store it in an `operator` CLI profile. The AWS provider cannot prompt
+   for an MFA code, so a helper, `scripts/assume-role.sh`, does the
+   assume-with-MFA and exports short-lived credentials into your shell; the
+   provider then uses them from the standard credential chain. The exact setup is
+   in [../iac/terraform/README.md](../iac/terraform/README.md).
+2. The Terraform in `iac/terraform/` is already written: `providers.tf` pins the
+   `aws` provider and sets default tags (`project = cloud-iam-lab`) with no
+   profile, so it uses the credentials the helper exports; `variables.tf` holds
+   Region, account, bucket name, the key-user roles, the confidential reader and
+   the `enforce_vpce` toggle.
+3. State is kept local for the lab (`*.tfstate` is git-ignored); production would
+   use an S3 remote backend with state locking.
 
 ## 2.2 KMS customer-managed key
 
@@ -77,6 +88,13 @@ Run and record each negative test; the failures are the evidence:
 
 Upload a dummy file (lorem-ipsum "customer records", never real data) to
 `confidential/` for the Phase 4 exfiltration test.
+
+As-built: the full test output is in [../evidence/phase2/README.md](../evidence/phase2/README.md),
+including the matched allowed-and-denied pair on `confidential/`. Note one
+consequence of the confidential deny: because it blocks any non-admin read, it
+also blocks Terraform's own refresh `HeadObject`, so applies run as `AdminJITRole`
+(the one principal the prefix admits). A production account would use a dedicated
+deployment role admitted on every prefix instead.
 
 ## Phase 2 deliverables
 
